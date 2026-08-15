@@ -1,0 +1,25 @@
+{
+  "routes": [
+    { "src": "/start",  "dest": "/start.html" },
+    { "src": "/terms", "dest": "/terms.html" },
+    
+    { "src": "/test",  "dest": "/test.html" },
+    { "src": "/test2",  "dest": "/test2.html" },
+
+    { "src": "/break",  "dest": "/break.html" },
+
+    { "src": "/test3",  "dest": "/test3.html" },
+    { "src": "/test4",  "dest": "/test4.html" },
+    
+
+    { "src": "/transit",  "dest": "/transit.html" },
+    { "src": "/transit2",  "dest": "/transit2.html" },
+    { "src": "/transit3",  "dest": "/transit3.html" },
+    { "src": "/transit4",  "dest": "/transit4.html" },
+    { "src": "/bluebook",  "dest": "/bluebook.html" },
+    
+
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
+}
