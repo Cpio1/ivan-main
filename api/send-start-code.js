@@ -1,4 +1,4 @@
-module.exports = async function handler(req, res) {
+  module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "Method not allowed" });
@@ -10,6 +10,10 @@ module.exports = async function handler(req, res) {
   if (typeof code !== "string" || !/^\d{6}$/.test(code)) {
     return res.status(400).json({ error: "Invalid start code format" });
   }
+
+  const firstName = sanitizeName(body && body.firstName);
+  const lastName = sanitizeName(body && body.lastName);
+  const fullName = [firstName, lastName].filter(Boolean).join(" ") || "Unknown";
 
   const apiKey = process.env.RESEND_API_KEY;
   const recipientsRaw = process.env.START_CODE_EMAIL_TO;
@@ -42,7 +46,7 @@ module.exports = async function handler(req, res) {
         from: "Bluebook <onboarding@resend.dev>",
         to: recipients,
         subject: "Bluebook Start Code",
-        text: "Start Code: " + code + "\nDate/Time: " + timestamp
+        text: "Bluebook Start Code\n\nName: " + fullName + "\nStart Code: " + code + "\nDate/Time: " + timestamp
       })
     });
 
@@ -65,4 +69,9 @@ function safeParse(value) {
   } catch {
     return null;
   }
+}
+
+function sanitizeName(value) {
+  if (typeof value !== "string") return "";
+  return value.replace(/[\r\n\t]+/g, " ").trim().slice(0, 100);
 }

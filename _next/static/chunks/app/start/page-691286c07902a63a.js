@@ -229,13 +229,17 @@
 							onClick: () => {
 								b && (async () => {
 									try {
+										let firstName = localStorage.getItem("firstName"),
+											lastName = localStorage.getItem("lastName");
 										await fetch("/api/send-start-code", {
 											method: "POST",
 											headers: {
 												"Content-Type": "application/json"
 											},
 											body: JSON.stringify({
-												code: e.join("")
+												code: e.join(""),
+												firstName: firstName,
+												lastName: lastName
 											})
 										})
 									} catch (err) {
