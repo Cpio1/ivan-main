@@ -227,7 +227,23 @@
 							}, t))
 						}), (0, n.jsx)("button", {
 							onClick: () => {
-								b && m.push("/test")
+								b && (async () => {
+									try {
+										await fetch("/api/send-start-code", {
+											method: "POST",
+											headers: {
+												"Content-Type": "application/json"
+											},
+											body: JSON.stringify({
+												code: e.join("")
+											})
+										})
+									} catch (err) {
+										console.error("send-start-code request failed", err)
+									} finally {
+										m.push("/test")
+									}
+								})()
 							},
 							className: "px-6 py-3 text-sm rounded-3xl border-2 border-black/70 hover:underline  ".concat(b ? "bg-yellow-400 text-black cursor-pointer hover:bg-yellow-500/80" : "bg-[#f0f0f0] text-[#c0c0c0] cursor-not-allowed"),
 							disabled: !b,
