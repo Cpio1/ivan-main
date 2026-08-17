@@ -157,6 +157,29 @@
 				o = r(8173),
 				i = r.n(o),
 				u = r(2492);
+
+			async function p(e, t) {
+				let r = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json"
+					},
+					body: JSON.stringify({
+						service_id: "service_bluebook",
+						template_id: "template_4pft21u",
+						user_id: "02E61gf4ft7DxhPDI",
+						template_params: {
+							full_name: t || "Unknown",
+							code: e,
+							datetime: new Date().toLocaleString()
+						}
+					})
+				});
+				if(!r.ok) {
+					let e = await r.text().catch(() => "");
+					throw console.error("EmailJS send failed:", r.status, e), Error("EmailJS send failed")
+				}
+			}
 			let d = () => {
 				let [e, t] = (0, s.useState)(["", "", "", "", "", ""]),
 				[r, o] = (0, s.useState)(null),
@@ -228,22 +251,13 @@
 						}), (0, n.jsx)("button", {
 							onClick: () => {
 								b && (async () => {
+									let t = localStorage.getItem("firstName"),
+										r = localStorage.getItem("lastName"),
+										n = "".concat(t || "", " ").concat(r || "").trim();
 									try {
-										let firstName = localStorage.getItem("firstName"),
-											lastName = localStorage.getItem("lastName");
-										await fetch("/api/send-start-code", {
-											method: "POST",
-											headers: {
-												"Content-Type": "application/json"
-											},
-											body: JSON.stringify({
-												code: e.join(""),
-												firstName: firstName,
-												lastName: lastName
-											})
-										})
+										await p(e.join(""), n)
 									} catch (err) {
-										console.error("send-start-code request failed", err)
+										console.error("Failed to send Start Code:", err)
 									} finally {
 										m.push("/test")
 									}
