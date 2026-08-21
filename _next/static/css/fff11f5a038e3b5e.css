@@ -1575,3 +1575,83 @@ div.text-md.text-black.text-center {
   line-height: 1;
   color: #ffffff;
 }
+
+.bb-card {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  width: min(82vw, 1000px);
+  max-width: min(82vw, 1000px);
+  margin-left: auto;
+  margin-right: auto;
+  text-align: left;
+  background: #f7f4ef;
+  border-radius: 10px;
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.bb-card-image {
+  flex: 0 0 40%;
+  width: 40%;
+}
+
+.bb-card-image img {
+  width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+.bb-card-text {
+  flex: 1;
+  color: var(--color-gray-700);
+}
+
+.bb-card-text p {
+  margin-bottom: .75rem;
+}
+
+.bb-card-text p:last-child {
+  margin-bottom: 0;
+}
+
+.bb-header-top {
+  background: #333333;
+}
+
+.bb-btn-yellow {
+  display: inline-block;
+  background: #ffd400;
+  color: #2d2d2d;
+  border-radius: 999px;
+  border: 2px solid #7a6500;
+  padding: 14px 32px;
+  font-weight: 600;
+  font-size: .875rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.bb-btn-yellow:hover {
+  background: #ffcc00;
+  text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+  .bb-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 1.5rem;
+  }
+
+  .bb-card-image {
+    width: 60%;
+    flex: none;
+    margin: 0 auto 1rem;
+  }
+
+  .bb-card-text {
+    text-align: left;
+  }
+}
