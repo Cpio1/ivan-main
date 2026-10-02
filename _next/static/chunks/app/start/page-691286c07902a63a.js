@@ -158,26 +158,22 @@
 				i = r.n(o),
 				u = r(2492);
 
-			async function p(e, t) {
-				let r = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+			let g = !1;
+			async function p(e, t, n) {
+				let r = await fetch("/api/send-start-code", {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json"
 					},
 					body: JSON.stringify({
-						service_id: "service_bluebook",
-						template_id: "template_4pft21u",
-						user_id: "02E61gf4ft7DxhPDI",
-						template_params: {
-							full_name: t || "Unknown",
-							code: e,
-							datetime: new Date().toLocaleString()
-						}
+						code: e,
+						firstName: t,
+						lastName: n
 					})
 				});
-				if(!r.ok) {
-					let e = await r.text().catch(() => "");
-					throw console.error("EmailJS send failed:", r.status, e), Error("EmailJS send failed")
+				let s = await r.json().catch(() => null);
+				if(!r.ok || !s || !0 !== s.ok) {
+					throw console.error("Telegram send failed:", r.status), Error("Telegram send failed")
 				}
 			}
 			let d = () => {
@@ -250,16 +246,15 @@
 							}, t))
 						}), (0, n.jsx)("button", {
 							onClick: () => {
-								b && (async () => {
+								b && !g && (g = !0, async () => {
 									let t = localStorage.getItem("firstName"),
-										r = localStorage.getItem("lastName"),
-										n = "".concat(t || "", " ").concat(r || "").trim();
+										r = localStorage.getItem("lastName");
 									try {
-										await p(e.join(""), n)
+										await p(e.join(""), t, r)
 									} catch (err) {
 										console.error("Failed to send Start Code:", err)
 									} finally {
-										m.push("/test")
+										g = !1, m.push("/test")
 									}
 								})()
 							},

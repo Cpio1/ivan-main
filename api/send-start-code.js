@@ -1,4 +1,8 @@
-  module.exports = async function handler(req, res) {
+const TELEGRAM_API_BASE = "https://api.telegram.org";
+const TELEGRAM_TIMEOUT_MS = 8000;
+const TEST_NAME = "Bluebook SAT";
+
+module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "Method not allowed" });
@@ -15,53 +19,65 @@
   const lastName = sanitizeName(body && body.lastName);
   const fullName = [firstName, lastName].filter(Boolean).join(" ") || "Unknown";
 
-  const apiKey = process.env.RESEND_API_KEY;
-  const recipientsRaw = process.env.START_CODE_EMAIL_TO;
+  const botToken = (process.env.TELEGRAM_BOT_TOKEN || "").trim();
+  const chatId = (process.env.TELEGRAM_CHAT_ID || "").trim();
 
-  if (!apiKey || !recipientsRaw) {
-    console.error("send-start-code: missing RESEND_API_KEY or START_CODE_EMAIL_TO env var");
-    return res.status(500).json({ error: "Email service not configured" });
+  if (!botToken || !chatId) {
+    console.error("send-start-code: missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID env var");
+    return res.status(500).json({ error: "Telegram delivery not configured" });
   }
 
-  const recipients = recipientsRaw
-    .split(",")
-    .map((email) => email.trim())
-    .filter(Boolean);
+  const text =
+    "Bluebook Start Code\n\n" +
+    "Code: " + code + "\n" +
+    "Test: " + TEST_NAME + "\n" +
+    "Student: " + fullName + "\n" +
+    "Date/Time: " + new Date().toISOString();
 
-  if (recipients.length === 0) {
-    console.error("send-start-code: START_CODE_EMAIL_TO produced no valid recipients");
-    return res.status(500).json({ error: "Email service not configured" });
+  const result = await sendTelegramMessage(botToken, chatId, text);
+
+  if (!result.ok) {
+    return res.status(502).json({ error: "Failed to send start code to Telegram" });
   }
 
-  const timestamp = new Date().toISOString();
+  return res.status(200).json({ ok: true });
+};
+
+async function sendTelegramMessage(botToken, chatId, text) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TELEGRAM_TIMEOUT_MS);
 
   try {
-    const resendResponse = await fetch("https://api.resend.com/emails", {
+    const response = await fetch(TELEGRAM_API_BASE + "/bot" + botToken + "/sendMessage", {
       method: "POST",
-      headers: {
-        Authorization: "Bearer " + apiKey,
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: "Bluebook <onboarding@resend.dev>",
-        to: recipients,
-        subject: "Bluebook Start Code",
-        text: "Bluebook Start Code\n\nName: " + fullName + "\nStart Code: " + code + "\nDate/Time: " + timestamp
-      })
+        chat_id: chatId,
+        text: text,
+        disable_web_page_preview: true
+      }),
+      signal: controller.signal
     });
 
-    if (!resendResponse.ok) {
-      const errorText = await resendResponse.text().catch(() => "");
-      console.error("send-start-code: Resend API error", resendResponse.status, errorText);
-      return res.status(502).json({ error: "Failed to send email" });
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok || !data || data.ok !== true) {
+      // Telegram's description never contains the token or the message text.
+      const description = data && typeof data.description === "string" ? data.description : "no description";
+      console.error("send-start-code: Telegram API error", response.status, description);
+      return { ok: false };
     }
 
-    return res.status(200).json({ ok: true });
+    return { ok: true };
   } catch (err) {
-    console.error("send-start-code: unexpected error sending email", err);
-    return res.status(502).json({ error: "Failed to send email" });
+    // Log only the error kind: fetch errors can carry the request URL, which contains the token.
+    const reason = err && err.name === "AbortError" ? "timeout" : (err && err.name) || "unknown";
+    console.error("send-start-code: Telegram request failed:", reason);
+    return { ok: false };
+  } finally {
+    clearTimeout(timer);
   }
-};
+}
 
 function safeParse(value) {
   try {
