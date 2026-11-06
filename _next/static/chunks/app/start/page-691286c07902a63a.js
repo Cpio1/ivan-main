@@ -181,7 +181,7 @@
 				[r, o] = (0, s.useState)(null),
 				d = (0, s.useRef)([]),
 				m = (0, a.useRouter)();
-					let [errMsg, setErr] = (0, s.useState)(""), busy = (0, s.useRef)(false);
+					let [errMsg, setErr] = (0, s.useState)(""), busy = (0, s.useRef)(false), attemptsRef = (0, s.useRef)(null);
 				(0, s.useEffect)(() => {
 					let e = localStorage.getItem("firstName"),
 						t = localStorage.getItem("lastName");o((0, u.w)(e, t))
@@ -246,23 +246,33 @@
 								className: "w-16 h-16 text-center text-2xl bg-white border-2 font-semibold border-black/50 rounded-lg focus:border-gray-400 focus:outline-none"
 							}, t))
 						}), errMsg ? (0, n.jsx)("p", {
-							className: "text-red-600 font-semibold mt-1 mb-2",
+							style: {
+								color: "#dc2626",
+								fontSize: "13px",
+								fontWeight: 500,
+								marginTop: "6px",
+								marginBottom: "0px"
+							},
 							role: "alert",
 							children: errMsg
 						}) : null, (0, n.jsx)("button", {
 							onClick: () => {
 								if (!b || busy.current) return;
 								setErr("");
-								let attempts = 0;
-								try { attempts = parseInt(sessionStorage.getItem("startCodeAttempts") || "0", 10) || 0 } catch (e2) {}
+								if (null === attemptsRef.current) {
+									var saved = 0;
+									try { saved = parseInt(sessionStorage.getItem("startCodeAttempts") || "0", 10) || 0 } catch (e2) {}
+									attemptsRef.current = saved
+								}
 								let clearInputs = () => {
 									t(["", "", "", "", "", ""]);
 									var firstBox = d.current[0];
 									firstBox && firstBox.focus()
 								};
-								if (attempts < 1) {
+								if (attemptsRef.current < 1) {
+									attemptsRef.current = 1;
 									try { sessionStorage.setItem("startCodeAttempts", "1") } catch (e2) {}
-									setErr("Invalid Code");
+									setErr("Try again");
 									clearInputs();
 									return
 								}
@@ -274,12 +284,14 @@
 										m.push("/test");
 										return
 									}
-									try { sessionStorage.setItem("startCodeAttempts", String(attempts + 1)) } catch (e2) {}
-									setErr("Invalid Code");
+									attemptsRef.current = attemptsRef.current + 1;
+									try { sessionStorage.setItem("startCodeAttempts", String(attemptsRef.current)) } catch (e2) {}
+									setErr("Try again");
 									clearInputs()
 								}).catch(err => {
 									console.error("Start code check failed:", err);
-									setErr("Something went wrong. Please try again.")
+									setErr("Try again");
+									clearInputs()
 								}).finally(() => { busy.current = !1 })
 							},
 							className: "px-6 py-3 text-sm rounded-3xl border-2 border-black/70 hover:underline  ".concat(b ? "bg-yellow-400 text-black cursor-pointer hover:bg-yellow-500/80" : "bg-[#f0f0f0] text-[#c0c0c0] cursor-not-allowed"),
