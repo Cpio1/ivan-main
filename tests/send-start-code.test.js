@@ -107,13 +107,16 @@ test("accepts a JSON string body", async (t) => {
   assert.equal(res.body.valid, true);
 });
 
-test("missing START_ACCESS_CODES -> 500 without calling Telegram", async (t) => {
+test("with no allowlist configured, any well-formed 6-digit code is accepted and notifies", async (t) => {
   const { calls } = setup(t, () => jsonResponse(200, { ok: true }));
   delete process.env.START_ACCESS_CODES;
   const res = mockRes();
-  await handler(post({ code: "007123" }), res);
-  assert.equal(res.statusCode, 500);
-  assert.equal(calls.length, 0);
+  await handler(post({ code: "999999", firstName: "Any", lastName: "Code" }), res);
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(res.body, { ok: true, valid: true, notified: true });
+  assert.equal(calls.length, 1);
+  const payload = JSON.parse(calls[0].opts.body);
+  assert.ok(!payload.text.includes("999999"), "the code must never be sent to Telegram");
 });
 
 test("valid code but missing Telegram env -> valid:true, notified:false, no Telegram call", async (t) => {

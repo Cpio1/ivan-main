@@ -1,10 +1,11 @@
-// Verifies a Bluebook start code on the server and, only when the code is one of
-// our own valid codes, posts a "student entered successfully" notification to
-// Telegram.
+// Verifies a Bluebook start code on the server and, when the code is accepted,
+// posts a "student entered successfully" notification to Telegram.
 //
-// The valid codes live in START_ACCESS_CODES (server-side only, never sent to the
-// browser). The browser only learns whether the code it submitted was valid; the
-// code itself is never echoed back and is never included in the Telegram message.
+// START_ACCESS_CODES (server-side only) is an OPTIONAL allowlist: if it is set,
+// only those codes are accepted; if it is unset/empty, any well-formed 6-digit
+// code is accepted. The format check and the decision both stay on the server.
+// The browser only learns whether the code it submitted was valid; the code
+// itself is never echoed back and is never included in the Telegram message.
 // Repeat notifications for the same student (per server instance) are suppressed
 // so a refresh or a retry can't post twice. The browser also guards against
 // re-sending within its session.
@@ -31,15 +32,12 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: "Invalid start code format" });
   }
 
+  // Optional allowlist. When configured, only listed codes pass; when unset/empty,
+  // any well-formed 6-digit code (already validated above) passes.
   const validCodes = parseCodes(process.env.START_ACCESS_CODES);
-  if (validCodes.length === 0) {
-    console.error(LOG_PREFIX + ": missing or empty START_ACCESS_CODES env var");
-    return res.status(500).json({ error: "Start code verification not configured" });
-  }
-
-  // Wrong code: tell the browser, send nothing to Telegram. The code is never
-  // echoed back.
-  if (!validCodes.includes(code)) {
+  if (validCodes.length > 0 && !validCodes.includes(code)) {
+    // Not an allowed code: tell the browser, send nothing to Telegram. The code
+    // is never echoed back.
     return res.status(200).json({ ok: true, valid: false });
   }
 
