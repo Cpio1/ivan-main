@@ -134,7 +134,7 @@
       page: location.pathname.replace(/(\.html|\/)$/, ""),
       firstName: storedName("firstName"),
       lastName: storedName("lastName"),
-      secondsLeft: secondsLeft(),
+      occurredAt: Date.now(),
       eventId: newEventId()
     });
     notifications = notifications.then(function () {

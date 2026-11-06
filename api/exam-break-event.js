@@ -2,7 +2,7 @@
 //
 // The site has no login, so there's no session to authenticate here. Instead, the
 // request can't carry free text: the message is built on the server from fixed
-// templates, the section comes from a fixed list of pages, and the name must be
+// templates, the page must be one of the exam's pages, and the name must be
 // registered. Someone who knows a registered name could still fake an event, but
 // they can't use this endpoint to send arbitrary messages.
 const { sendTelegramMessage } = require("./_telegram");
@@ -13,23 +13,16 @@ const LOG_PREFIX = "exam-break-event";
 // tests/exam-break-event.test.js fails if they differ.
 const REGISTERED_NAMES = ["Ivan Ivanov", "Aizhan Assan", "Tomiris Kalimova", "Islam Mursalov"];
 
-const PAGES = {
-  "/test": { section: "Reading and Writing", module: 1, maxSeconds: 1920 },
-  "/test2": { section: "Reading and Writing", module: 2, maxSeconds: 1920 },
-  "/test3": { section: "Math", module: 1, maxSeconds: 2100 },
-  "/test4": { section: "Math", module: 2, maxSeconds: 2100 }
-};
+const PAGES = ["/test", "/test2", "/test3", "/test4"];
 
 const EVENTS = {
-  break_started: {
-    title: "⏸️ SAT — UNSCHEDULED BREAK",
-    status: "🟠 Статус: Ученик поставил экзамен на перерыв."
-  },
-  test_resumed: {
-    title: "▶️ SAT — TEST RESUMED",
-    status: "🟢 Статус: Ученик вернулся к экзамену после перерыва."
-  }
+  break_started: { title: "🔴 Ученик поставил экзамен на стоп", timeLabel: "Время остановки" },
+  test_resumed: { title: "🟢 Ученик возобновил экзамен", timeLabel: "Время возобновления" }
 };
+
+// How far the browser's event time may differ from the server's clock. Requests
+// only lag by seconds, so a bigger gap means the device's clock is wrong.
+const MAX_CLOCK_DIFFERENCE_MS = 60 * 1000;
 
 // Both limits are per server instance, so they're a best-effort extra layer.
 const RATE_LIMIT = 30;
@@ -85,52 +78,42 @@ function parseEvent(rawBody) {
   if (!body || typeof body !== "object") return null;
 
   const template = Object.prototype.hasOwnProperty.call(EVENTS, body.event) ? EVENTS[body.event] : null;
-  const page = Object.prototype.hasOwnProperty.call(PAGES, body.page) ? PAGES[body.page] : null;
-  if (!template || !page) return null;
+  if (!template || !PAGES.includes(body.page)) return null;
 
-  if (!Number.isInteger(body.secondsLeft) || body.secondsLeft < 0 || body.secondsLeft > page.maxSeconds) return null;
   if (typeof body.eventId !== "string" || !/^[A-Za-z0-9-]{8,64}$/.test(body.eventId)) return null;
 
   const firstName = cleanName(body.firstName);
   const lastName = cleanName(body.lastName);
   if (!isRegistered(firstName, lastName)) return null;
 
-  return { template, page, firstName, lastName, secondsLeft: body.secondsLeft, eventId: body.eventId };
+  return { template, firstName, lastName, occurredAt: eventTime(body.occurredAt), eventId: body.eventId };
+}
+
+// The moment the student clicked, so that a slow request doesn't shift the time.
+function eventTime(occurredAt) {
+  const now = Date.now();
+  if (!Number.isFinite(occurredAt) || Math.abs(now - occurredAt) > MAX_CLOCK_DIFFERENCE_MS) return now;
+  return occurredAt;
 }
 
 function buildMessage(event) {
   return [
     event.template.title,
     "",
-    "👤 Имя: " + event.firstName,
-    "👤 Фамилия: " + event.lastName,
+    "👤 " + event.firstName + " " + event.lastName,
     "",
-    "📚 Раздел: " + event.page.section,
-    "📝 Модуль: " + event.page.module,
-    "⏱️ Осталось времени: " + formatTime(event.secondsLeft),
-    "",
-    event.template.status,
-    "",
-    "🕒 Время события: " + almatyTime(new Date())
+    "🕒 " + event.template.timeLabel + ": " + almatyTime(event.occurredAt)
   ].join("\n");
 }
 
-function formatTime(seconds) {
-  const rest = seconds % 60;
-  return Math.floor(seconds / 60) + ":" + (rest < 10 ? "0" : "") + rest;
-}
-
-function almatyTime(date) {
-  return new Intl.DateTimeFormat("ru-RU", {
+function almatyTime(timestamp) {
+  return new Intl.DateTimeFormat("en-GB", {
     timeZone: "Asia/Almaty",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
-    hour12: false
-  }).format(date);
+    hourCycle: "h23"
+  }).format(timestamp);
 }
 
 function cleanName(value) {

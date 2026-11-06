@@ -29,7 +29,7 @@ function validBody(overrides) {
     page: "/test",
     firstName: "Ivan",
     lastName: "Ivanov",
-    secondsLeft: 1912,
+    occurredAt: Date.now(),
     eventId: "event-id-" + nextId,
     ...overrides
   };
@@ -67,59 +67,67 @@ function setup(t, fetchImpl) {
 
 const sentText = (call) => JSON.parse(call.opts.body).text;
 
-test("break message has the requested format and Almaty time", async (t) => {
+// 09:22:31 UTC is 14:22:31 in Almaty (UTC+5).
+const STOP_TIME = Date.UTC(2026, 10, 6, 9, 22, 31);
+
+function freezeClock(t, now) {
+  t.mock.timers.enable({ apis: ["Date"], now });
+}
+
+test("stop message is exactly the requested text, with the Almaty time", async (t) => {
   const { calls } = setup(t);
+  freezeClock(t, STOP_TIME);
   const res = mockRes();
-  await handler(post(validBody()), res);
+  await handler(post(validBody({ occurredAt: STOP_TIME })), res);
 
   assert.equal(res.statusCode, 200);
   assert.equal(calls[0].url, "https://api.telegram.org/bot" + TOKEN + "/sendMessage");
   assert.equal(JSON.parse(calls[0].opts.body).chat_id, CHAT_ID);
-  const lines = sentText(calls[0]).split("\n");
-  assert.deepEqual(lines.slice(0, 11), [
-    "⏸️ SAT — UNSCHEDULED BREAK",
-    "",
-    "👤 Имя: Ivan",
-    "👤 Фамилия: Ivanov",
-    "",
-    "📚 Раздел: Reading and Writing",
-    "📝 Модуль: 1",
-    "⏱️ Осталось времени: 31:52",
-    "",
-    "🟠 Статус: Ученик поставил экзамен на перерыв.",
-    ""
-  ]);
-  const expected = new Date().toLocaleString("ru-RU", { timeZone: "Asia/Almaty", day: "2-digit", month: "2-digit", year: "numeric" });
-  assert.ok(lines[11].startsWith("🕒 Время события: " + expected), lines[11]);
-  assert.match(lines[11], /\d{2}:\d{2}:\d{2}$/);
-  assert.doesNotMatch(sentText(calls[0]), /останов/i);
+  assert.equal(sentText(calls[0]), "🔴 Ученик поставил экзамен на стоп\n\n👤 Ivan Ivanov\n\n🕒 Время остановки: 14:22:31");
 });
 
-test("resume message and every page's section and module", async (t) => {
+test("resume message is exactly the requested text on every exam page", async (t) => {
   const { calls } = setup(t);
-  const cases = [
-    ["/test", "Reading and Writing", "1"],
-    ["/test2", "Reading and Writing", "2"],
-    ["/test3", "Math", "1"],
-    ["/test4", "Math", "2"]
-  ];
-  for (const [page, section, moduleNumber] of cases) {
-    await handler(post(validBody({ event: "test_resumed", page, secondsLeft: 65 })), mockRes());
-    const text = sentText(calls[calls.length - 1]);
-    assert.match(text, /^▶️ SAT — TEST RESUMED\n/);
-    assert.ok(text.includes("📚 Раздел: " + section + "\n"));
-    assert.ok(text.includes("📝 Модуль: " + moduleNumber + "\n"));
-    assert.ok(text.includes("⏱️ Осталось времени: 1:05\n"));
-    assert.ok(text.includes("🟢 Статус: Ученик вернулся к экзамену после перерыва."));
+  const resumeTime = Date.UTC(2026, 10, 6, 9, 27, 15);
+  freezeClock(t, resumeTime);
+  for (const page of ["/test", "/test2", "/test3", "/test4"]) {
+    await handler(post(validBody({ event: "test_resumed", page, occurredAt: resumeTime })), mockRes());
+    assert.equal(sentText(calls[calls.length - 1]), "🟢 Ученик возобновил экзамен\n\n👤 Ivan Ivanov\n\n🕒 Время возобновления: 14:27:15");
   }
 });
 
-test("name check is case-insensitive like the login page, and shows the name as entered", async (t) => {
+test("time is when the student clicked, even if the request arrives later", async (t) => {
+  const { calls } = setup(t);
+  freezeClock(t, STOP_TIME + 9000);
+  await handler(post(validBody({ occurredAt: STOP_TIME })), mockRes());
+  assert.match(sentText(calls[0]), /Время остановки: 14:22:31$/);
+});
+
+test("a wrong or missing device time falls back to the server's time and still sends", async (t) => {
+  const { calls } = setup(t);
+  freezeClock(t, STOP_TIME);
+  for (const occurredAt of [STOP_TIME - 3600000, STOP_TIME + 3600000, "14:00:00", null, undefined, Infinity]) {
+    const res = mockRes();
+    await handler(post(validBody({ occurredAt })), res);
+    assert.equal(res.statusCode, 200, String(occurredAt));
+    assert.match(sentText(calls[calls.length - 1]), /Время остановки: 14:22:31$/, String(occurredAt));
+  }
+});
+
+test("midnight in Almaty is shown as 00, not 24", async (t) => {
+  const { calls } = setup(t);
+  const midnight = Date.UTC(2026, 10, 6, 19, 0, 5);
+  freezeClock(t, midnight);
+  await handler(post(validBody({ occurredAt: midnight })), mockRes());
+  assert.match(sentText(calls[0]), /Время остановки: 00:00:05$/);
+});
+
+test("name check is case-insensitive like the login page, and shows the name as entered on one line", async (t) => {
   const { calls } = setup(t);
   const res = mockRes();
   await handler(post(validBody({ firstName: " aizhan ", lastName: "ASSAN" })), res);
   assert.equal(res.statusCode, 200);
-  assert.ok(sentText(calls[0]).includes("👤 Имя: aizhan\n👤 Фамилия: ASSAN\n"));
+  assert.ok(sentText(calls[0]).includes("\n👤 aizhan ASSAN\n"));
 });
 
 test("invalid input is rejected without calling Telegram", async (t) => {
@@ -134,10 +142,6 @@ test("invalid input is rejected without calling Telegram", async (t) => {
     { firstName: "Ivan\n\nFAKE MESSAGE" },
     { firstName: undefined },
     { lastName: 42 },
-    { secondsLeft: -1 },
-    { secondsLeft: 1921 },
-    { secondsLeft: 12.5 },
-    { secondsLeft: "100" },
     { eventId: "short" },
     { eventId: "bad id with spaces" },
     { eventId: undefined }
