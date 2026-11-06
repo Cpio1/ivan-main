@@ -242,7 +242,7 @@ const p = [
                 ] = (0, a.useState)(1920),
                 [F, T
                 ] = (0, a.useState)(!0), H = (0, r.useRouter)();
-				(0, a.useEffect)(() => {
+				(0,a.useEffect)(()=>{window.__examSecondsLeft=D},[D]),(0, a.useEffect)(() => {
                     0 === D && H.push("/transit")
                 },
                 [D, H
@@ -258,10 +258,7 @@ const p = [
 					I(localStorage.getItem("lastName") || ""),
 					R(JSON.parse(localStorage.getItem($)) || {}),
 					J(JSON.parse(localStorage.getItem("verbal1_flagged")) || {});
-					let e = setInterval(() => {
-						O(e => e > 0 ? e - 1 : 0)
-                    },
-                    1e3);
+					let __end=Date.now()+1920e3,e=setInterval(()=>{O(Math.max(0,Math.round((__end-Date.now())/1e3)))},1e3);
 					return() => clearInterval(e)
                 },
                 []), (0, a.useEffect)(() => {
@@ -435,14 +432,14 @@ const p = [
                                                         }),
                                                         "Line Reader"
                                                     ]
-                                                }), (0, i.jsxs)("div",
+                                                }),(0,i.jsxs)("div",{className:"flex items-center gap-2 p-2 py-4 cursor-pointer hover:bg-gray-100 hover:underline",onClick:()=>{W(!1),window.__openUnscheduledBreak&&window.__openUnscheduledBreak()},children:[(0,i.jsx)("svg",{width:24,height:24,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:2,strokeLinecap:"round",children:(0,i.jsx)("path",{d:"M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM10 9v6M14 9v6"})}),"Unscheduled Break"]}), (0, i.jsxs)("div",
                                                 {
 									className: "flex items-center gap-2 p-2 py-4 cursor-pointer hover:bg-gray-100 hover:underline",
 									children: [(0, i.jsx)(x.iDO,
                                                         {
 										size: 24
                                                         }),
-                                                        "Save and Exit"
+                                                        "Exit the Exam"
                                                     ]
                                                 })
                                             ]
