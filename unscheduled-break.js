@@ -5,9 +5,9 @@
  * therefore keeps its answers, current question, flags and timer, and when the
  * module's time runs out its usual redirect happens as normal.
  *
- * The other pieces it relies on:
- * - The time left comes from exam-state.js, the same deadline the exam timer uses.
- *   This file has no countdown of its own.
+ * The test bundles provide two things:
+ * - window.__examSecondsLeft: the exam timer's current value. It's only read here;
+ *   this file has no countdown of its own.
  * - The "Unscheduled Break" item in the More menu, which calls
  *   window.__openUnscheduledBreak().
  *
@@ -23,6 +23,7 @@
     "/test3": { section: "Section 2:", name: "Math" },
     "/test4": { section: "Section 2:", name: "Math" }
   };
+  var ACTIVE_BREAK_KEY = "examBreakActive";
 
   var CSS =
     ".ub-overlay{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;" +
@@ -70,8 +71,7 @@
     ".ub-student{text-align:center}}";
 
   var page = PAGES[location.pathname.replace(/(\.html|\/)$/, "")];
-  var clock = window.__examClock;
-  if (!page || !clock) return;
+  if (!page) return;
 
   // "idle", "confirming" or "on-break". Every action checks this first, so
   // repeated clicks can't start a break or send a notification twice.
@@ -93,12 +93,11 @@
   }
 
   function secondsLeft() {
-    return clock.secondsLeft();
+    return window.__examSecondsLeft;
   }
 
-  // Set by the first React commit, so it also means hydration has finished.
   function examIsRunning() {
-    return typeof window.__examSecondsLeft === "number" && secondsLeft() !== null;
+    return typeof secondsLeft() === "number";
   }
 
   // Same format as the exam's own timer.
@@ -113,6 +112,13 @@
     } catch (e) {
       return "";
     }
+  }
+
+  function setActiveBreak(active) {
+    try {
+      if (active) sessionStorage.setItem(ACTIVE_BREAK_KEY, location.pathname);
+      else sessionStorage.removeItem(ACTIVE_BREAK_KEY);
+    } catch (e) {}
   }
 
   function newEventId() {
@@ -208,7 +214,7 @@
   function takeBreak() {
     if (state !== "confirming" || !root.querySelector("#ub-confirm").checked) return;
     state = "on-break";
-    clock.setBreak(true);
+    setActiveBreak(true);
     notify("break_started");
     showBreakScreen();
   }
@@ -216,7 +222,7 @@
   function resume() {
     if (state !== "on-break") return;
     state = "idle";
-    clock.setBreak(false);
+    setActiveBreak(false);
     notify("test_resumed");
     clearScreen();
   }
@@ -256,18 +262,25 @@
     }, 250);
   }
 
-  // After a reload or a reopened tab, put the break screen back without notifying.
-  // This waits for React to finish loading, since nodes added earlier would disturb
-  // hydration.
+  // After a page reload during a break, put the break screen back. This waits for
+  // React to finish loading, since nodes added earlier would disturb hydration.
   function restoreBreak() {
-    if (!clock.isOnBreak()) return;
+    var active = null;
+    try {
+      active = sessionStorage.getItem(ACTIVE_BREAK_KEY);
+    } catch (e) {}
+    if (!active) return;
+    if (active !== location.pathname) {
+      // The module ended during the break, so that break is over.
+      setActiveBreak(false);
+      return;
+    }
     var wait = setInterval(function () {
       if (!examIsRunning()) return;
       clearInterval(wait);
       state = "on-break";
       showBreakScreen();
-      clock.reveal();
-    }, 50);
+    }, 100);
   }
 
   var style = document.createElement("style");
