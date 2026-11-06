@@ -2,7 +2,7 @@
 //
 // The site has no login, so there's no session to authenticate here. Instead, the
 // request can't carry free text: the message is built on the server from fixed
-// templates, the section comes from a fixed list of pages, and the name must be
+// templates, the page must be one of the exam's pages, and the name must be
 // registered. Someone who knows a registered name could still fake an event, but
 // they can't use this endpoint to send arbitrary messages.
 const { sendTelegramMessage } = require("./_telegram");
@@ -14,21 +14,15 @@ const LOG_PREFIX = "exam-break-event";
 const REGISTERED_NAMES = ["Ivan Ivanov", "Aizhan Assan", "Tomiris Kalimova", "Islam Mursalov"];
 
 const PAGES = {
-  "/test": { section: "Reading and Writing", module: 1, maxSeconds: 1920 },
-  "/test2": { section: "Reading and Writing", module: 2, maxSeconds: 1920 },
-  "/test3": { section: "Math", module: 1, maxSeconds: 2100 },
-  "/test4": { section: "Math", module: 2, maxSeconds: 2100 }
+  "/test": { maxSeconds: 1920 },
+  "/test2": { maxSeconds: 1920 },
+  "/test3": { maxSeconds: 2100 },
+  "/test4": { maxSeconds: 2100 }
 };
 
 const EVENTS = {
-  break_started: {
-    title: "⏸️ SAT — UNSCHEDULED BREAK",
-    status: "🟠 Статус: Ученик поставил экзамен на перерыв."
-  },
-  test_resumed: {
-    title: "▶️ SAT — TEST RESUMED",
-    status: "🟢 Статус: Ученик вернулся к экзамену после перерыва."
-  }
+  break_started: { title: "🔴 Ученик поставил экзамен на стоп", timeLabel: "Время остановки" },
+  test_resumed: { title: "🟢 Ученик возобновил экзамен", timeLabel: "Время возобновления" }
 };
 
 // Both limits are per server instance, so they're a best-effort extra layer.
@@ -95,41 +89,26 @@ function parseEvent(rawBody) {
   const lastName = cleanName(body.lastName);
   if (!isRegistered(firstName, lastName)) return null;
 
-  return { template, page, firstName, lastName, secondsLeft: body.secondsLeft, eventId: body.eventId };
+  return { template, firstName, lastName, eventId: body.eventId };
 }
 
 function buildMessage(event) {
   return [
     event.template.title,
     "",
-    "👤 Имя: " + event.firstName,
-    "👤 Фамилия: " + event.lastName,
+    "👤 " + event.firstName + " " + event.lastName,
     "",
-    "📚 Раздел: " + event.page.section,
-    "📝 Модуль: " + event.page.module,
-    "⏱️ Осталось времени: " + formatTime(event.secondsLeft),
-    "",
-    event.template.status,
-    "",
-    "🕒 Время события: " + almatyTime(new Date())
+    "🕒 " + event.template.timeLabel + ": " + almatyTime(new Date())
   ].join("\n");
 }
 
-function formatTime(seconds) {
-  const rest = seconds % 60;
-  return Math.floor(seconds / 60) + ":" + (rest < 10 ? "0" : "") + rest;
-}
-
 function almatyTime(date) {
-  return new Intl.DateTimeFormat("ru-RU", {
+  return new Intl.DateTimeFormat("en-GB", {
     timeZone: "Asia/Almaty",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
-    hour12: false
+    hourCycle: "h23"
   }).format(date);
 }
 
