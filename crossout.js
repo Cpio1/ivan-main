@@ -4,7 +4,13 @@
  *
  * Self-contained, like battery-status.js and calculator-widget.js: the source
  * of the Next.js bundles is not in this repo, so this script adds its button to
- * the labels React renders and never reads or writes answers, flags or the timer.
+ * the labels React renders and never touches flags or the timer.
+ *
+ * A crossed-out choice can't be the answer. The test bundles' answer handler, which
+ * every way of selecting a choice ends up in, asks window.__isChoiceCrossedOut first
+ * and ignores crossed-out choices, so React puts the radio back. If the selected
+ * choice gets crossed out, sync() clears it through window.__clearExamAnswer, which
+ * the bundles provide. That also covers answers saved before this rule existed.
  *
  * How it stays compatible with React:
  * - Buttons are only added once React has finished hydrating the label. An extra
@@ -112,6 +118,15 @@
     return LETTERS[Array.prototype.indexOf.call(group, radio)] || null;
   }
 
+  function isChoiceCrossedOut(questionId, value) {
+    var key = storageKey();
+    if (!key) return false;
+    var crossed = loadState(key)[questionId] || [];
+    return Array.prototype.some.call(document.getElementsByName("question-" + questionId), function (radio, index) {
+      return radio.value === String(value) && crossed.indexOf(LETTERS[index]) !== -1;
+    });
+  }
+
   function toggle(button) {
     var key = storageKey();
     var label = button.parentNode;
@@ -189,6 +204,7 @@
       var crossed = (state[questionIdOf(radio)] || []).indexOf(letter) !== -1;
       if (crossed) setAttr(label, "data-crossed", "");
       else if (label.hasAttribute("data-crossed")) label.removeAttribute("data-crossed");
+      if (crossed && radio.checked && window.__clearExamAnswer) window.__clearExamAnswer(questionIdOf(radio));
 
       if (button.textContent !== letter) button.textContent = letter;
       setAttr(button, "aria-pressed", String(crossed));
@@ -209,11 +225,14 @@
     style.textContent = CSS;
     document.head.appendChild(style);
 
+    window.__isChoiceCrossedOut = isChoiceCrossedOut;
+
+    // "class" because that's the only DOM change when saved answers are restored.
     new MutationObserver(sync).observe(document.body, {
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ["name"]
+      attributeFilter: ["name", "class"]
     });
     sync();
   }

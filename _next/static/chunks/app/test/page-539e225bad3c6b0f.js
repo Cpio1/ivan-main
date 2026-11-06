@@ -266,7 +266,7 @@ const p = [
                 },
                 [E
                 ]);
-				let L = (e, t) => {
+				(0,a.useEffect)(()=>{window.__clearExamAnswer=e=>R(t=>{let s={...t};return delete s[e],localStorage.setItem($,JSON.stringify(s)),s})},[]);let L = (e, t) => {if(window.__isChoiceCrossedOut&&window.__isChoiceCrossedOut(e,t))return;
 						let s = {...E,
                         [e
                         ]: t
