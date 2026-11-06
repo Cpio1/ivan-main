@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>Check-in</title>
+  <link rel="icon" href="/favicon.ico"/>
+  <link rel="stylesheet" href="/checkin.css"/>
+</head>
+<body>
+  <div class="wizard">
+    <main class="wizard-main" id="wizard-main">
+      <div class="wizard-content" id="wizard-content"></div>
+    </main>
+    <footer class="wizard-footer">
+      <button type="button" class="pill pill-back" id="wizard-back">Back</button>
+      <div class="wizard-progress">
+        <div class="wizard-step-label" id="wizard-step-label"></div>
+        <div class="wizard-bar" id="wizard-bar" role="progressbar" aria-valuemin="1" aria-valuemax="9">
+          <div class="wizard-bar-fill" id="wizard-bar-fill"></div>
+        </div>
+      </div>
+      <button type="button" class="pill pill-next" id="wizard-next">Next</button>
+    </footer>
+  </div>
+  <script src="/checkin.js" defer></script>
+</body>
+</html>

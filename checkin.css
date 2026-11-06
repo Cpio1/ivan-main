@@ -1,0 +1,279 @@
+/* Check-in wizard (/checkin). The page doesn't load the Next.js stylesheet, so
+   nothing here can affect the rest of the site, and vice versa. */
+:root {
+  --bg: #f0f4fc;
+  --card: #ffffff;
+  --text: #1e1e1e;
+  --muted: #505050;
+  --line: #d9dee8;
+  --blue: #324dc7;
+  --yellow: #ffd600;
+  --green: #17803d;
+  --red: #b42318;
+  --disabled-bg: #e4e6ea;
+  --disabled-text: #8b8f97;
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; margin: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+h1, h2, h3, p, ul { margin: 0; }
+ul { padding: 0; list-style: none; }
+
+/* Layout: the main area scrolls, so the footer always stays reachable. */
+.wizard { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+.wizard-main { flex: 1; min-height: 0; overflow-y: auto; padding: 36px 24px; }
+.wizard-content { max-width: 1040px; margin: 0 auto; }
+.wizard-content.narrow { max-width: 720px; }
+
+.wizard-title {
+  margin-bottom: 28px;
+  font-size: 34px;
+  font-weight: 500;
+  line-height: 1.2;
+  text-align: center;
+  outline: none;
+}
+
+/* Footer */
+.wizard-footer {
+  display: grid;
+  grid-template-columns: 1fr minmax(0, 320px) 1fr;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 32px;
+  padding-bottom: calc(14px + env(safe-area-inset-bottom));
+  background: var(--card);
+  box-shadow: 0 -1px 4px rgba(30, 40, 70, 0.08);
+}
+.wizard-footer .pill-back { justify-self: start; }
+.wizard-footer .pill-next { justify-self: end; }
+.wizard-progress { min-width: 0; text-align: center; }
+.wizard-step-label { margin-bottom: 6px; font-size: 14px; font-weight: 700; }
+.wizard-bar { height: 6px; overflow: hidden; border-radius: 3px; background: var(--line); }
+.wizard-bar-fill { height: 100%; border-radius: 3px; background: var(--blue); transition: width 250ms ease; }
+
+.pill {
+  min-width: 96px;
+  padding: 9px 26px;
+  border: 1px solid #000;
+  border-radius: 999px;
+  color: #000;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pill:focus-visible, .radio-option input:focus-visible + .radio-mark, .scroll-region:focus-visible, .pledge-input:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+.pill-back { background: #fff; }
+.pill-back:hover { background: #f3f4f6; }
+.pill-next { background: var(--yellow); }
+.pill-next:hover { background: #f5cc00; }
+.pill-next:disabled {
+  border-color: var(--disabled-bg);
+  background: var(--disabled-bg);
+  color: var(--disabled-text);
+  cursor: not-allowed;
+}
+
+/* Cards */
+.card {
+  padding: 28px 32px;
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: 0 1px 3px rgba(30, 40, 70, 0.06);
+}
+.card-title { margin-bottom: 14px; font-size: 20px; font-weight: 700; line-height: 1.3; }
+.card-subtitle { margin: 22px 0 10px; font-size: 16px; font-weight: 700; }
+.columns { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.divider { margin: 24px 0; border: 0; border-top: 1px solid var(--line); }
+.label { margin-bottom: 4px; font-weight: 700; }
+.muted { color: var(--muted); }
+.note { margin-top: 20px; color: var(--muted); font-size: 14px; }
+.stack > * + * { margin-top: 14px; }
+
+/* Radio options */
+.question { margin-bottom: 12px; font-weight: 700; }
+.radio-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.radio-option + .radio-option { margin-top: 10px; }
+.radio-option:hover { background: #f7f9fd; }
+.radio-option:has(input:checked) { border-color: var(--blue); box-shadow: inset 0 0 0 1px var(--blue); }
+.radio-option input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.radio-mark {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  border: 1.5px solid #5c5f66;
+  border-radius: 50%;
+  background: #fff;
+}
+.radio-option input:checked + .radio-mark { border: 6px solid var(--blue); }
+
+.notice { margin-top: 16px; padding: 14px 16px; border-radius: 10px; background: var(--bg); }
+.notice .pill { margin-top: 12px; }
+
+/* Long scrolling card */
+.scroll-region { max-height: calc(100vh - 240px); max-height: calc(100dvh - 240px); overflow-y: auto; }
+.overview-block + .overview-block { margin-top: 22px; }
+.overview-block h2 { margin-bottom: 6px; font-size: 18px; font-weight: 700; }
+.overview-block p + p { margin-top: 12px; }
+
+/* Icon lists */
+.icon { flex: none; width: 28px; height: 28px; color: var(--text); }
+.icon svg { display: block; width: 100%; height: 100%; }
+
+/* Step 5: desk checklist */
+.desk-page { background: #f1f5fb; }
+.desk-card { border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 2px 6px rgba(30, 40, 70, 0.06); }
+.desk-card .card-title { margin-bottom: 20px; }
+.desk-card .desk-subheading { margin-top: 32px; }
+.desk-list li { display: flex; align-items: flex-start; gap: 16px; text-align: left; }
+.desk-list li + li { margin-top: 22px; }
+.desk-list p { min-width: 0; padding-top: 1px; }
+.desk-icon {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+.desk-icon .icon { width: 24px; height: 24px; color: #000; }
+.desk-icon.allowed { background: #e8eaee; }
+/* Drawn over the item icon, so the slash crosses it. */
+.prohibition-sign { position: absolute; inset: 0; width: 100%; height: 100%; color: #a51c30; }
+
+/* Step 4: testing tools */
+.tools-page { background: #f1f5fb; }
+.tools-page .wizard-content { max-width: 941px; }
+@media (min-width: 761px) {
+  .tools-page .wizard-title { margin-bottom: 22px; font-size: 27px; }
+}
+.tools-panel {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 13px 13px 0 0;
+  background: var(--card);
+  box-shadow: 0 1px 3px rgba(30, 40, 70, 0.06);
+}
+.video-cover {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  background: linear-gradient(135deg, #2a41ad, #4661dc);
+  color: #fff;
+}
+.video-play {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--blue);
+}
+.video-play svg { width: 24px; height: 24px; margin-left: 3px; }
+.video-title { font-size: 21px; font-weight: 700; }
+.tools-text { padding: 30px 43px; color: #242424; font-size: 16px; line-height: 1.5; }
+.tools-text h2 { font-size: inherit; font-weight: 700; }
+.tools-text > * + * { margin-top: 21px; }
+
+/* Step 6: security pledge */
+.security-page { padding-bottom: 56px; background: #f1f5fb; }
+.security-page .wizard-content { max-width: 1000px; color: #333; font-size: 18px; line-height: 1.7; }
+.security-page .wizard-title { margin-bottom: 36px; font-size: 40px; font-weight: 400; }
+.security-heading { margin-bottom: 12px; font-size: inherit; font-weight: 700; }
+.rules { padding-left: 28px; list-style: disc; }
+.rules li + li { margin-top: 10px; }
+.pledge-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; margin-top: 40px; }
+.pledge-heading { padding-bottom: 12px; border-bottom: 1px solid #c9ced8; }
+.pledge-input {
+  display: block;
+  width: 100%;
+  height: 190px;
+  padding: 16px;
+  border: 2px solid #8a8f98;
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  resize: vertical;
+}
+main.security-page ~ .wizard-footer .pill-next:disabled {
+  border-color: #e2e2e2;
+  background: #e2e2e2;
+  color: #999;
+  cursor: not-allowed;
+}
+
+/* Centred status cards */
+.status-card { text-align: center; }
+.status-icon { display: flex; justify-content: center; margin-bottom: 16px; }
+.status-icon .icon { width: 64px; height: 64px; }
+.status-icon.ok .icon { color: var(--green); }
+.status-icon.bad .icon { color: var(--red); }
+.status-card .pill { margin-top: 16px; }
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--line);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 900ms linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.lock-art { width: 170px; height: auto; margin-bottom: 18px; color: var(--blue); }
+.emphasis { font-weight: 700; }
+
+@media (max-width: 760px) {
+  .wizard-main { padding: 22px 16px; }
+  .wizard-title { margin-bottom: 18px; font-size: 26px; }
+  .card { padding: 20px; }
+  .columns { grid-template-columns: 1fr; }
+  /* The page itself scrolls here; a second scroll area inside it is awkward on touch. */
+  .scroll-region { max-height: none; overflow: visible; }
+  .tools-text { padding: 20px; font-size: 16px; }
+  .security-page .wizard-content { font-size: 16px; }
+  .security-page .wizard-title { margin-bottom: 20px; font-size: 28px; }
+  .rules { padding-left: 22px; }
+  .pledge-columns { grid-template-columns: 1fr; gap: 24px; margin-top: 28px; }
+  .tools-text > * + * { margin-top: 16px; }
+  .video-play { width: 52px; height: 52px; }
+  .video-play svg { width: 24px; height: 24px; }
+  .video-title { font-size: 20px; }
+  .wizard-footer { grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; padding-left: 12px; padding-right: 12px; }
+  .wizard-footer .pill { min-width: 0; padding: 9px 18px; }
+  .wizard-step-label { font-size: 13px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wizard-bar-fill { transition: none; }
+  .spinner { animation-duration: 3s; }
+}

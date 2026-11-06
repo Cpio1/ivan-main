@@ -36,7 +36,7 @@
 				i = a(2492);
 
 			function u() {
-				let [e, t] = (0, r.useState)(""), [a, n] = (0, r.useState)(""), [u, o] = (0, r.useState)(!0), [d, m] = (0, r.useState)(""), h = (0, l.useRouter)(), x = e.trim() && a.trim() && u;
+				let [e, t] = (0, r.useState)(""), [a, n] = (0, r.useState)(""), [u, o] = (0, r.useState)(!0), [d, m] = (0, r.useState)(""), h = (0, l.useRouter)(), x = e.trim() && a.trim() && u; (0, r.useEffect)(() => { new URLSearchParams(location.search).has("editName") && (t(localStorage.getItem("firstName") || ""), n(localStorage.getItem("lastName") || "")) }, []);
 				return(0, s.jsx)("div", {
 					className: "min-h-screen bg-[#c9dfd3] flex flex-col items-center justify-center p-4",
 					children: (0, s.jsxs)("div", {
@@ -81,7 +81,7 @@
 								}
 								localStorage.setItem("firstName", e),
 								localStorage.setItem("lastName", a),
-								h.push("/start")
+								h.push("/checkin")
 							},
 							disabled: !x,
 							className: "mt-4 px-4 py-3 text-sm rounded-3xl border-2 border-black/70 w-full ".concat(x ? "bg-yellow-400 text-black" : "bg-[#f0f0f0] text-[#c0c0c0] cursor-not-allowed"),
