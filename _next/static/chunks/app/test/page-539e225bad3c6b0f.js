@@ -253,13 +253,12 @@ const p = [
                 ] = (0, a.useState)({}),
                 [G
                 ] = (0, a.useState)("verbal1"), $ = "verbal1_answers";
-				(0, a.useEffect)(() => {
+				(0,a.useEffect)(()=>{window.__examClock&&window.__examClock.saveQuestion(A)},[A]);(0, a.useEffect)(() => {
 					z(localStorage.getItem("firstName") || "Guest"),
 					I(localStorage.getItem("lastName") || ""),
 					R(JSON.parse(localStorage.getItem($)) || {}),
 					J(JSON.parse(localStorage.getItem("verbal1_flagged")) || {});
-					let __end=Date.now()+1920e3,e=setInterval(()=>{O(Math.max(0,Math.round((__end-Date.now())/1e3)))},1e3);
-					return() => clearInterval(e)
+					window.__examClock&&(window.__examClock.restoreView(p.length,M,k));let __end=window.__examClock?window.__examClock.deadline(1920):Date.now()+1920e3,__tick=()=>O(Math.max(0,Math.ceil((__end-Date.now())/1e3))),e=setInterval(__tick,1e3);__tick();document.addEventListener("visibilitychange",__tick);return()=>{clearInterval(e),document.removeEventListener("visibilitychange",__tick)}
                 },
                 []), (0, a.useEffect)(() => {
 					B(E)

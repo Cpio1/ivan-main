@@ -119,14 +119,18 @@
       });
   }
 
-  // Wait for the window "load" event (fires after the Next.js client
-  // bundles have been fetched and executed, i.e. after React hydration's
-  // initial synchronous pass) before touching any server-rendered DOM.
-  // Mutating this span/svg any earlier races React's hydrateRoot() walk
-  // over the same nodes and throws a hydration-mismatch error (React #418).
-  if (document.readyState === "complete") {
-    initBattery();
-  } else {
-    window.addEventListener("load", initBattery);
+  // Touching this span or svg before React has hydrated them causes a hydration
+  // mismatch (React #418). The "load" event isn't enough, because on a slow device
+  // hydration can finish later, so this checks for React's marker on the span itself.
+  function startWhenHydrated() {
+    var percentEl = findIndicator();
+    if (!percentEl) return;
+    var isHydrated = Object.keys(percentEl).some(function (key) {
+      return key.indexOf("__reactProps$") === 0;
+    });
+    if (isHydrated) initBattery();
+    else setTimeout(startWhenHydrated, 100);
   }
+
+  startWhenHydrated();
 })();
