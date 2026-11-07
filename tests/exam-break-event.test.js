@@ -125,9 +125,26 @@ test("midnight in Almaty is shown as 00, not 24", async (t) => {
 test("name check is case-insensitive like the login page, and shows the name as entered on one line", async (t) => {
   const { calls } = setup(t);
   const res = mockRes();
-  await handler(post(validBody({ firstName: " aizhan ", lastName: "ASSAN" })), res);
+  await handler(post(validBody({ firstName: " zhasmina ", lastName: "DOSSAYEVA" })), res);
   assert.equal(res.statusCode, 200);
-  assert.ok(sentText(calls[0]).includes("\n👤 aizhan ASSAN\n"));
+  assert.ok(sentText(calls[0]).includes("\n👤 zhasmina DOSSAYEVA\n"));
+});
+
+test("every student who can log in gets both notifications sent", async (t) => {
+  const { calls } = setup(t);
+  const bundle = fs.readFileSync(path.join(__dirname, "../_next/static/chunks/app/page-f97c4b30b39a8ed5.js"), "utf8");
+  const names = JSON.parse(bundle.match(/\[\s*"Ivan[^\]]*\]/)[0]);
+  assert.ok(names.length > 1);
+  for (const name of names) {
+    const [firstName, lastName] = name.split(" ");
+    for (const event of ["break_started", "test_resumed"]) {
+      const res = mockRes();
+      await handler(post(validBody({ event, firstName, lastName })), res);
+      assert.equal(res.statusCode, 200, name + " " + event);
+      assert.ok(sentText(calls[calls.length - 1]).includes("\n👤 " + name + "\n"), name + " " + event);
+    }
+  }
+  assert.equal(calls.length, names.length * 2);
 });
 
 test("invalid input is rejected without calling Telegram", async (t) => {

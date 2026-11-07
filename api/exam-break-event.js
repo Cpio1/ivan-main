@@ -11,7 +11,7 @@ const LOG_PREFIX = "exam-break-event";
 
 // Keep in sync with the name lists in the "/" and "/start" bundles.
 // tests/exam-break-event.test.js fails if they differ.
-const REGISTERED_NAMES = ["Ivan Ivanov", "Aizhan Assan", "Tomiris Kalimova", "Islam Mursalov"];
+const REGISTERED_NAMES = ["Ivan Ivanov", "Orazalin Tanirkhan", "Ali Baibarakov", "Abilmansur Akhmetov", "Zhasmina Dossayeva", "Ernur Shegebayev"];
 
 const PAGES = ["/test", "/test2", "/test3", "/test4"];
 
