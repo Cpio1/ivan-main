@@ -62,9 +62,10 @@
     "transition:color " + ANIMATION_MS + "ms ease,border-color " + ANIMATION_MS + "ms ease,background-color " + ANIMATION_MS + "ms ease}" +
     // Larger touch target without changing how big the button looks.
     ".crossout-btn::before{content:'';position:absolute;inset:-7px -6px}" +
-    // The diagonal line through the letter.
-    ".crossout-btn::after{content:'';position:absolute;left:-2px;right:-2px;top:50%;height:1px;margin-top:-.5px;" +
-    "background:currentColor;transform:rotate(-45deg);pointer-events:none}" +
+    // The horizontal line through the letter. Centred with a transform because a
+    // -.5px margin gets rounded to the pixel grid, which leaves the line off centre.
+    ".crossout-btn::after{content:'';position:absolute;left:-2px;right:-2px;top:50%;height:1px;" +
+    "background:currentColor;transform:translateY(-50%);pointer-events:none}" +
     "@media (hover:hover){.crossout-btn:hover{background:#f3f4f6}}" +
     ".crossout-btn:focus-visible{outline:2px solid #334dc8;outline-offset:2px}" +
     ".crossout-btn[aria-pressed='true']{color:#334dc8;border-color:#334dc8;background:#eef0fb}" +
