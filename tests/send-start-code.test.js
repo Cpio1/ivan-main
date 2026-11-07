@@ -56,7 +56,7 @@ function setup(t, fetchImpl) {
 const jsonResponse = (status, data) => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
 const post = (body) => ({ method: "POST", body });
 
-test("valid code notifies with the student's name and success status, never the code", async (t) => {
+test("valid code sends the code and the student's name to Telegram, but isn't echoed to the browser", async (t) => {
   const { calls } = setup(t, () => jsonResponse(200, { ok: true, result: {} }));
   const res = mockRes();
   await handler(post({ code: "007123", firstName: "Ivan", lastName: "Ivanov" }), res);
@@ -71,7 +71,7 @@ test("valid code notifies with the student's name and success status, never the 
   assert.match(payload.text, /successful entry/);
   assert.match(payload.text, /Student: Ivan Ivanov/);
   assert.match(payload.text, /Test: Bluebook SAT/);
-  assert.ok(!payload.text.includes("007123"), "the code must never be sent to Telegram");
+  assert.match(payload.text, /Code: 007123/);
   assert.ok(!JSON.stringify(res.body).includes("007123"), "code must not be echoed to the browser");
 });
 
@@ -84,19 +84,19 @@ test("wrong (but well-formed) code returns valid:false and sends nothing to Tele
   assert.equal(calls.length, 0);
 });
 
-test("a second valid entry for the same student is de-duplicated (no repeat Telegram message)", async (t) => {
+test("a repeat entry by the same student sends its own code to Telegram", async (t) => {
   const { calls } = setup(t, () => jsonResponse(200, { ok: true }));
   const first = mockRes();
-  await handler(post({ code: "000000", firstName: "Dedupe", lastName: "Student" }), first);
-  assert.equal(first.body.notified, true);
+  await handler(post({ code: "000000", firstName: "Repeat", lastName: "Student" }), first);
+  assert.deepEqual(first.body, { ok: true, valid: true, notified: true });
 
   const second = mockRes();
-  await handler(post({ code: "000000", firstName: "Dedupe", lastName: "Student" }), second);
-  assert.equal(second.statusCode, 200);
-  assert.equal(second.body.valid, true);
-  assert.equal(second.body.notified, false);
-  assert.equal(second.body.duplicate, true);
-  assert.equal(calls.length, 1, "Telegram is called only once for the same student");
+  await handler(post({ code: "424242", firstName: "Repeat", lastName: "Student" }), second);
+  assert.deepEqual(second.body, { ok: true, valid: true, notified: true });
+
+  assert.equal(calls.length, 2);
+  assert.match(JSON.parse(calls[0].opts.body).text, /Code: 000000/);
+  assert.match(JSON.parse(calls[1].opts.body).text, /Code: 424242/);
 });
 
 test("accepts a JSON string body", async (t) => {
@@ -116,7 +116,7 @@ test("with no allowlist configured, any well-formed 6-digit code is accepted and
   assert.deepEqual(res.body, { ok: true, valid: true, notified: true });
   assert.equal(calls.length, 1);
   const payload = JSON.parse(calls[0].opts.body);
-  assert.ok(!payload.text.includes("999999"), "the code must never be sent to Telegram");
+  assert.match(payload.text, /Code: 999999/);
 });
 
 test("valid code but missing Telegram env -> valid:true, notified:false, no Telegram call", async (t) => {
